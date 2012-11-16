@@ -1,6 +1,7 @@
 <?php
 /***
- * https://gist.github.com/4078027
+ * en : https://gist.github.com/4084471
+ * ja : https://gist.github.com/4078027
  **/
 
 if (defined('ABSPATH')) :
