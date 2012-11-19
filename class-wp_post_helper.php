@@ -21,9 +21,7 @@ class wp_post_helper {
 	private $fields = array();
 
 	function __construct($args = array()){
-		$this->init();
-		if (is_array($args) && count($args) > 0)
-			$this->set($args);
+		$this->init($args);
 	}
 
 	// Get PostID
@@ -37,7 +35,7 @@ class wp_post_helper {
 	}
 
 	// Init Post Data
-	public function init(){
+	public function init($args = array()){
 		$this->post = get_default_post_to_edit();
 		$this->post->post_category = null;
 		$this->attachment_id = array();
@@ -45,6 +43,10 @@ class wp_post_helper {
 		$this->medias = array();
 		$this->metas  = array();
 		$this->fields = array();
+		if (is_array($args) && count($args) > 0)
+			return $this->set($args);
+		else
+			return true;
 	}
 
 	// Set Post Data
