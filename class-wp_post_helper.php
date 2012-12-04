@@ -281,10 +281,6 @@ class wp_post_helper {
 	}
 }
 
-function convert_zenkaku($content) {
-	return mb_convert_kana($content, 'nrKV', 'UTF-8');
-}
-
 function remote_get_file($url = null, $file_dir = '') {
 	if (!$url)
 		return false;
