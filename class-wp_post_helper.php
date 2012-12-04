@@ -19,6 +19,8 @@ class wp_post_helper {
 	private $medias = array();
 	private $metas  = array();
 	private $fields = array();
+	private $media_count = 0;
+	private $terms  = array();
 
 	function __construct($args = array()){
 		$this->init($args);
@@ -36,17 +38,30 @@ class wp_post_helper {
 
 	// Init Post Data
 	public function init($args = array()){
-		$this->post = get_default_post_to_edit();
-		$this->post->post_category = null;
 		$this->attachment_id = array();
 		$this->tags   = array();
 		$this->medias = array();
 		$this->metas  = array();
 		$this->fields = array();
-		if (is_array($args) && count($args) > 0)
-			return $this->set($args);
-		else
-			return true;
+		$this->media_count = 0;
+
+		if (is_numeric($args)) {
+			$post = get_post(intval($args));
+			if ($post && isset($post->ID) && !is_wp_error($post)) {
+				$this->post_id = $post->ID;
+				$this->post = $post;
+				return true;
+			} else {
+				return false;
+			}
+		} else {
+			$this->post = get_default_post_to_edit();
+			$this->post->post_category = null;
+			if (is_array($args) && count($args) > 0)
+				return $this->set($args);
+			else
+				return true;
+		}
 	}
 
 	// Set Post Data
@@ -54,9 +69,21 @@ class wp_post_helper {
 		if (!is_array($args))
 			return false;
 
+		if (isset($args['ID']) || isset($args['post_id'])) {
+			$post_id = isset($args['ID']) ? $args['ID'] : $args['post_id'];
+			$post = get_post($post_id, 'ARRAY_A');
+			if (isset($post['ID'])) {
+				$this->post_id  = $post_id;
+				$this->post->ID = $post_id;
+				unset($post['ID']);
+				$this->set($post);
+			}
+			unset($post);
+		}
+
 		$post = $this->post;
 		foreach ($post as $key => &$val) {
-			if (isset($args[$key])) {
+			if ($key !== 'ID' && isset($args[$key])) {
 				$val = $args[$key];
 			}
 		}
@@ -69,6 +96,8 @@ class wp_post_helper {
 				: explode(',', $args['post_tags'])
 				);
 		}
+
+		return true;
 	}
 
 	// Add Post
@@ -76,48 +105,79 @@ class wp_post_helper {
 		if (!isset($this->post))
 			return false;
 
-		$postid = 
-			!$this->postid
-			? wp_insert_post($this->post)
-			: $this->postid;
-
+		$this->postid   = 0;
+		$this->post->ID = 0;
+		$postid = wp_insert_post($this->post);
 		if ($postid && !is_wp_error($postid)) {
 			$this->postid   = $postid;
 			$this->post->ID = $postid;
-
-			// add Tags
-			if (count($this->tags) > 0)
-				$this->add_tags($this->tags);
-			$this->tags = array();
-			
-			// add medias
-			foreach ($this->medias as $key => $val) {
-				$this->add_media($key, $val[0], $val[1], $val[2], $val[3]);
-			}
-			$this->medias = array();
-
-			// add Custom Fields
-			foreach ($this->metas as $key => $val) {
-				if (is_array($val))
-					$this->add_meta($key, $val[0], isset($val[1]) ? $val[1] : true);
-				else
-					$this->add_meta($key, $val);
-			}
-			$this->metas = array();
-
-			// add ACF Fields
-			foreach ($this->fields as $key => $val) {
-				$this->add_field($key, $val);
-			}
-			$this->fields = array();
-
-			return $postid;
-
+			return $this->add_related_meta($postid) ? $postid : false;
 		} else {
 			$this->postid   = false;
 			$this->post->ID = 0;
 			return false;
 		}
+	}
+
+	// Update Post
+	public function update(){
+		if (!isset($this->post))
+			return false;
+
+		$postid = 
+			$this->postid
+			? wp_update_post($this->post)
+			: wp_insert_post($this->post);
+		if ($postid && !is_wp_error($postid)) {
+			$this->postid   = $postid;
+			$this->post->ID = $postid;
+			return $this->add_related_meta($postid) ? $postid : false;
+		} else {
+			$this->postid   = false;
+			$this->post->ID = 0;
+			return false;
+		}
+	}
+
+	private function add_related_meta($postid){
+		if (!$postid || is_wp_error($postid))
+			return false;
+
+		$this->postid   = $postid;
+
+		// add Tags
+		if (count($this->tags) > 0)
+			$this->add_tags($this->tags);
+		$this->tags = array();
+			
+		// add medias
+		foreach ($this->medias as $key => $val) {
+			$this->add_media($key, $val[0], $val[1], $val[2], $val[3]);
+		}
+		$this->medias = array();
+
+		// add terms
+		foreach ($this->terms as $taxonomy => $terms) {
+			$this->add_terms($taxonomy, $terms);
+		}
+		$this->terms = array();
+
+		// add Custom Fields
+		foreach ($this->metas as $key => $val) {
+			if (is_array($val))
+				$this->add_meta($key, $val[0], isset($val[1]) ? $val[1] : true);
+			else
+				$this->add_meta($key, $val);
+		}
+		$this->metas = array();
+
+		// add ACF Fields
+		foreach ($this->fields as $key => $val) {
+			$this->add_field($key, $val);
+		}
+		$this->fields = array();
+
+		return true;
 	}
 
 	// Add Tag
@@ -133,6 +193,20 @@ class wp_post_helper {
 			$tags = implode(',', $this->tags);
 			$this->tags = array();
 			return wp_add_post_tags($this->postid, $tags);
+		}
+	}
+
+	// add terms
+	public function add_terms($taxonomy, $terms){
+		if (!$this->postid) {
+			if (!isset($this->terms[$taxonomy]))
+				$this->terms[$taxonomy] = array();
+			foreach((array)$terms as $term) {
+				if (array_search($term, $this->terms[$taxonomy]) === FALSE)
+					$this->terms[$taxonomy][] = $term;
+			}
+		} else {
+			return wp_set_object_terms($this->postid, $terms, $taxonomy);
 		}
 	}
 
@@ -166,6 +240,7 @@ class wp_post_helper {
 				'post_content'   => $content ,
 				'post_excerpt'   => $excerpt ,
 				'post_status'    => 'inherit',
+				'menu_order'     => $this->media_count + 1,
 			);
 			if (isset($this->post->post_name) && $this->post->post_name)
 				$attachment['post_name'] = $this->post->post_name;
@@ -173,6 +248,7 @@ class wp_post_helper {
 			unset($attachment);
 
 			if (!is_wp_error($attachment_id)) {
+				$this->media_count++;
 				$this->attachment_id[] = $attachment_id;
 				$attachment_data = wp_generate_attachment_metadata($attachment_id, $filename);
 				wp_update_attachment_metadata($attachment_id,  $attachment_data);
@@ -190,29 +266,23 @@ class wp_post_helper {
 
 	// Add Custom Field
 	public function add_meta($metakey, $val, $unique = true){
-		if (!$this->postid) {
+		if (!$this->postid)
 			$this->metas[$metakey] = array($val, $unique);
-			return;
-		}
-
-		return
-			($this->postid && $val)
-			? add_post_meta($this->postid, $metakey, $val, $unique)
-			: false;
+		else
+			return $val ? add_post_meta($this->postid, $metakey, $val, $unique) : false;
 	}
 
 	// Add Advanced Custom Field
 	public function add_field($field_key, $val){
-		if (!$this->postid) {
+		if (!$this->postid)
 			$this->fields[$field_key] = $val;
-			return;
-		}
-
-		return
-			($this->postid && $val)
-			? update_field($field_key, $val, $this->postid)
-			: false;
+		else
+			return $val ? update_field($field_key, $val, $this->postid) : false;
 	}
+}
+
+function convert_zenkaku($content) {
+	return mb_convert_kana($content, 'nrKV', 'UTF-8');
 }
 
 function remote_get_file($url = null, $file_dir = '') {
