@@ -117,7 +117,7 @@ class wp_post_helper {
 			$this->post->ID = $postid;
 			return $this->add_related_meta($postid) ? $postid : false;
 		} else {
-			$this->postid   = false;
+			$this->postid   = $postid;
 			$this->post->ID = 0;
 			return false;
 		}
