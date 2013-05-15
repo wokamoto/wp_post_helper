@@ -38,6 +38,8 @@ class wp_post_helper {
 
 	// Init Post Data
 	public function init($args = array()){
+		if (is_object($args))
+			$args = (array)$args;
 		$this->attachment_id = array();
 		$this->tags   = array();
 		$this->medias = array();
@@ -66,6 +68,8 @@ class wp_post_helper {
 
 	// Set Post Data
 	public function set($args) {
+		if (is_object($args))
+			$args = (array)$args;
 		if (!is_array($args))
 			return false;
 
