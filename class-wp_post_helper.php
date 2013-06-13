@@ -317,6 +317,12 @@ function remote_get_file($url = null, $file_dir = '') {
     // we should to think avoiding file name collision.
     $photo_elements = parse_url($photo);
     $photo = $photo_elements['path'];
+    // wordpress cannot use url-encoded file
+    // ex) /foo/bar/%E3%81%BB%E3%81%92
+    $photo = $photo == urldecode($photo)
+        ? $photo
+        : str_replace('%', '', $photo);
+    //var_dump($photo);     exit;
 	if ( !file_exists($photo) ) {
 		$response = wp_remote_get($url);
 		if ( !is_wp_error($response) && $response["response"]["code"] === 200 ) {
