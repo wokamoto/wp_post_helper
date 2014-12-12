@@ -1,5 +1,5 @@
 {
-    "name": "megumi/wp_post_helper",
+    "name": "megumi/wp-post-helper",
     "license": "GPL2",
     "require": {
         "php": ">=5.3"
