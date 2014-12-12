@@ -1,5 +1,7 @@
 # megumi/wp-post-helper
 
+[![Build Status](https://travis-ci.org/megumiteam/wp-post-helper.svg?branch=master)](https://travis-ci.org/megumiteam/wp-post-helper)
+
 Helper class of the `wp_insert_post()`
 
 ## Installation
