@@ -264,6 +264,10 @@ if ( defined( 'ABSPATH' ) ) :
 				return;
 			}
 
+			if ( filter_var( $filename, FILTER_VALIDATE_URL ) ) {
+				$filename = $this->remote_get_file( $filename );
+			}
+
 			if (  $filename && file_exists( $filename )  ) {
 				$mime_type = '';
 				$wp_filetype = wp_check_filetype( basename( $filename ), null );
@@ -328,47 +332,47 @@ if ( defined( 'ABSPATH' ) ) :
 				return $val ? update_field( $field_key, $val, $this->postid ) : false;
 			}
 		}
-	}
 
-	function remote_get_file( $url = null, $file_dir = '' ) {
-		if ( ! $url ) {
-			return false;
-		}
+		private function remote_get_file( $url = null, $file_dir = '' ) {
+			if ( ! $url ) {
+				return false;
+			}
 
-		if ( empty( $file_dir ) ) {
-			 $upload_dir = wp_upload_dir();
-			 $file_dir = isset( $upload_dir['path'] ) ? $upload_dir['path'] : '';
-		}
-		$file_dir = trailingslashit( $file_dir );
+			if ( empty( $file_dir ) ) {
+				 $upload_dir = wp_upload_dir();
+				 $file_dir = isset( $upload_dir['path'] ) ? $upload_dir['path'] : '';
+			}
+			$file_dir = trailingslashit( $file_dir );
 
-		// make directory
-		if ( ! file_exists( $file_dir ) ) {
-			$dirs = explode( '/', $file_dir );
-			$subdir = '/';
-			foreach ( $dirs as $dir ) {
-				if ( ! empty( $dir ) ) {
-					$subdir .= $dir . '/';
-					if ( ! file_exists( $subdir ) ) {
-						wp_mkdir_p( $subdir );
+			// make directory
+			if ( ! file_exists( $file_dir ) ) {
+				$dirs = explode( '/', $file_dir );
+				$subdir = '/';
+				foreach ( $dirs as $dir ) {
+					if ( ! empty( $dir ) ) {
+						$subdir .= $dir . '/';
+						if ( ! file_exists( $subdir ) ) {
+							wp_mkdir_p( $subdir );
+						}
 					}
 				}
 			}
-		}
 
-		// remote get!
-		$photo = $file_dir . basename( $url );
-		if ( ! file_exists( $photo ) ) {
-			$response = wp_remote_get( $url );
-			if ( ! is_wp_error( $response ) && $response['response']['code'] === 200 ) {
-				$photo_data = $response['body'];
-				file_put_contents( $photo, $photo_data );
-				unset( $photo_data );
-			} else {
-				$photo = false;
+			// remote get!
+			$photo = $file_dir . basename( $url );
+			if ( ! file_exists( $photo ) ) {
+				$response = wp_remote_get( esc_url_raw( $url ) );
+				if ( ! is_wp_error( $response ) && $response['response']['code'] === 200 ) {
+					$photo_data = $response['body'];
+					file_put_contents( $photo, $photo_data );
+					unset( $photo_data );
+				} else {
+					$photo = false;
+				}
+				unset( $response );
 			}
-			unset( $response );
+			return file_exists( $photo ) ? $photo : false;
 		}
-		return file_exists( $photo ) ? $photo : false;
 	}
 
 endif;
