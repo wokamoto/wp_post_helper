@@ -1,0 +1,25 @@
+{
+    "name": "megumi/wp-post-helper",
+    "license": "GPL2",
+    "require": {
+        "php": ">=5.3"
+    },
+    "authors": [
+        {
+            "name": "Wataru Okamoto",
+            "email": "wokamoto@digitalcube.jp"
+        },
+        {
+            "name": "Takayuki Miyauchi",
+            "email": "miyauchi@digitalcube.jp"
+        }
+    ],
+    "autoload": {
+        "psr-0": {
+            "Megumi": "lib/"
+        }
+    },
+    "require": {
+        "phpunit/phpunit": "*"
+    }
+}

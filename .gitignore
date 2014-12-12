@@ -1,0 +1,4 @@
+/vendor/
+bin
+phpunit.xml
+tests
