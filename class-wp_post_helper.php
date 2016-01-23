@@ -342,7 +342,6 @@ function remote_get_file($url = null, $file_dir = '') {
     $photo = $photo == urldecode($photo)
         ? $photo
         : str_replace('%', '', $photo);
-    //var_dump($photo);     exit;
 	if ( !file_exists($photo) ) {
 		$response = wp_remote_get($url);
 		if ( !is_wp_error($response) && $response["response"]["code"] === 200 ) {
